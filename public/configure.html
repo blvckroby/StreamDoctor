@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#07090d" />
+  <link rel="icon" href="/logo.png" />
+  <title>Configure · StreamDoctor</title>
+  <style>
+    :root{color-scheme:dark;--bg:#07090d;--card:#10141b;--line:rgba(255,255,255,.09);--text:#f7f8fb;--muted:#98a2b0;--green:#50df8a;--red:#ff6570;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);min-height:100vh}body:before{content:"";position:fixed;inset:-20%;pointer-events:none;background:radial-gradient(circle at 50% 0,rgba(255,67,67,.14),transparent 24%)}a{color:inherit;text-decoration:none}.shell{width:min(860px,calc(100% - 32px));margin:auto;position:relative;z-index:1}.nav{height:76px;display:flex;align-items:center;justify-content:space-between}.brand{display:flex;gap:11px;align-items:center;font-weight:760}.brand img{width:36px;height:36px;border-radius:10px;background:#fff}.back{font-size:13px;color:#bac2cd;border:1px solid var(--line);padding:9px 12px;border-radius:999px}.head{padding:50px 0 24px}.eyebrow{font-size:12px;color:#8d97a5;letter-spacing:.11em;text-transform:uppercase;font-weight:800}.head h1{font-size:clamp(42px,7vw,68px);letter-spacing:-.055em;line-height:.96;margin:14px 0}.head p{font-size:17px;line-height:1.6;color:var(--muted);max-width:680px;margin:0}.card{margin:24px 0 55px;background:rgba(16,20,27,.86);border:1px solid var(--line);border-radius:26px;padding:26px;box-shadow:0 30px 90px rgba(0,0,0,.35);backdrop-filter:blur(18px)}label{display:block;font-size:14px;font-weight:740;margin:19px 0 8px}.hint{font-size:12px;color:#7f8997;line-height:1.55;margin-top:7px}textarea,input{width:100%;background:#090c11;border:1px solid rgba(255,255,255,.11);border-radius:13px;color:#fff;padding:13px 14px;font:inherit;outline:none;transition:.18s border}textarea:focus,input:focus{border-color:rgba(255,255,255,.28)}textarea{min-height:168px;resize:vertical}.row{display:grid;grid-template-columns:1fr 1fr;gap:14px}.legend{display:flex;gap:10px;flex-wrap:wrap;margin:23px 0 3px}.tag{font-size:12px;color:#aab3be;border:1px solid var(--line);border-radius:999px;padding:7px 10px}.check{display:flex;gap:10px;align-items:center;font-weight:650}.check input{width:auto}.button{width:100%;margin-top:25px;border:0;border-radius:14px;padding:15px 18px;font-weight:800;font-size:15px;background:#f6f7fa;color:#080a0e;cursor:pointer}.button:disabled{opacity:.55;cursor:wait}.result{display:none;margin-top:20px;padding:18px;background:#090c11;border:1px solid var(--line);border-radius:16px}.result a{color:#fff;word-break:break-all}.manifest{padding:13px;background:#0e1218;border:1px solid var(--line);border-radius:12px;margin:10px 0 15px}.ok{color:var(--green)}.bad{color:var(--red)}.source{padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px}.source:last-child{border:0}.actions{display:flex;gap:8px;flex-wrap:wrap}.smallbtn{border:1px solid var(--line);background:#141922;color:#e8ebef;padding:9px 11px;border-radius:10px;cursor:pointer;font-weight:700;font-size:12px}.footer{padding:0 0 42px;color:#697381;font-size:12px}@media(max-width:650px){.row{grid-template-columns:1fr}.head{padding-top:34px}.card{padding:19px}.shell{width:min(100% - 24px,860px)}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="nav"><a class="brand" href="/"><img src="/logo.png" alt=""><span>StreamDoctor</span></a><a class="back" href="/">← Home</a></div>
+    <header class="head"><span class="eyebrow">Personal manifest</span><h1>Configure your doctor.</h1><p>Add the stream addons you already use. StreamDoctor validates them, merges their results and creates one personal manifest for Stremio or Nuvio.</p></header>
+    <main class="card">
+      <form id="form">
+        <label for="upstreams">Upstream manifest URLs</label>
+        <textarea id="upstreams" name="upstreams" placeholder="https://example-addon.com/manifest.json&#10;https://another-addon.com/your-config/manifest.json" required></textarea>
+        <div class="hint">One manifest per line. Configured manifest URLs are supported and kept intact.</div>
+        <div class="row">
+          <div><label for="probeTimeoutMs">Fast stream probe</label><input id="probeTimeoutMs" name="probeTimeoutMs" type="number" min="1000" max="10000" value="3500" /><div class="hint">Milliseconds before the adaptive retry starts.</div></div>
+          <div><label for="upstreamTimeoutMs">Addon search timeout</label><input id="upstreamTimeoutMs" name="upstreamTimeoutMs" type="number" min="5000" max="30000" value="15000" /><div class="hint">How long to wait for EasyStreams, ToastFlix, etc.</div></div>
+        </div>
+        <div><label for="maxStreams">Maximum streams shown</label><input id="maxStreams" name="maxStreams" type="number" min="5" max="100" value="40" /></div>
+        <div class="legend"><span class="tag">🟢 Ready</span><span class="tag">🟡 Extra pipeline</span><span class="tag">🟠 Problem</span><span class="tag">🔴 Dead</span></div>
+        <label class="check"><input type="checkbox" name="hideDead" /> Hide confirmed dead streams</label>
+        <button class="button" id="submit" type="submit">Create personal manifest</button>
+      </form>
+      <div class="result" id="result"></div>
+    </main>
+    <div class="footer">Private/local network targets are blocked in production by default. Keep <code>ALLOW_PRIVATE_NETWORKS</code> disabled on a public deployment.</div>
+  </div>
+<script>
+const form=document.getElementById('form'),result=document.getElementById('result'),button=document.getElementById('submit');
+form.addEventListener('submit',async e=>{e.preventDefault();button.disabled=true;button.textContent='Checking addons…';result.style.display='block';result.innerHTML='Validating upstream manifests…';const fd=new FormData(form),payload=Object.fromEntries(fd.entries());payload.hideDead=fd.has('hideDead');try{const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),data=await r.json();if(!r.ok)throw new Error(data.error||'Configuration failed');const good=(data.valid||[]).map(x=>`<div class="source ok">✓ ${esc(x.name)}</div>`).join(''),bad=(data.invalid||[]).map(x=>`<div class="source bad">✕ ${esc(x.manifestUrl)} — ${esc(x.error)}</div>`).join('');result.innerHTML=`<strong>Your StreamDoctor is ready.</strong><div class="manifest" id="manifestText">${esc(data.manifestUrl)}</div><div class="actions"><a class="smallbtn" href="${data.installUrl}">Open in Stremio</a><button class="smallbtn" type="button" id="copy">Copy manifest</button></div><div style="margin-top:14px">${good}${bad}</div>`;document.getElementById('copy').onclick=async()=>{await navigator.clipboard.writeText(data.manifestUrl);document.getElementById('copy').textContent='Copied ✓'}}catch(err){result.innerHTML=`<span class="bad">${esc(err.message)}</span>`}finally{button.disabled=false;button.textContent='Create personal manifest'}});
+function esc(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]))}
+</script>
+</body>
+</html>

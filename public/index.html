@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#07090d" />
+  <meta name="description" content="StreamDoctor checks Stremio and Nuvio streams before you play: ready, sidecar, errors and dead links at a glance." />
+  <link rel="icon" href="/logo.png" />
+  <title>StreamDoctor · Know before you play</title>
+  <style>
+    :root{
+      color-scheme:dark;
+      --bg:#07090d;--panel:rgba(18,21,28,.76);--panel2:#10141b;--line:rgba(255,255,255,.09);
+      --text:#f7f8fb;--muted:#9da7b5;--green:#50df8a;--yellow:#ffd45a;--orange:#ff9d4d;--red:#ff5d68;
+      --shadow:0 34px 100px rgba(0,0,0,.42);
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+    }
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);overflow-x:hidden}
+    body:before{content:"";position:fixed;inset:-20%;pointer-events:none;background:
+      radial-gradient(circle at 50% 12%,rgba(255,70,70,.13),transparent 25%),
+      radial-gradient(circle at 15% 35%,rgba(80,223,138,.07),transparent 24%),
+      radial-gradient(circle at 84% 52%,rgba(255,212,90,.06),transparent 22%);filter:blur(6px)}
+    a{color:inherit;text-decoration:none}.shell{width:min(1120px,calc(100% - 36px));margin:auto;position:relative;z-index:1}
+    nav{height:78px;display:flex;align-items:center;justify-content:space-between}.brand{display:flex;align-items:center;gap:12px;font-weight:760;letter-spacing:-.02em}.brand img{width:38px;height:38px;border-radius:11px;background:#fff;box-shadow:0 8px 26px rgba(0,0,0,.24)}
+    .nav-actions{display:flex;align-items:center;gap:10px}.pill,.cta{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:11px 16px;border:1px solid var(--line);font-size:14px;font-weight:720}.pill{color:#c6ced8;background:rgba(255,255,255,.025)}.cta{background:#f7f8fb;color:#080a0e;border-color:#fff}.cta:hover{transform:translateY(-1px)}
+    .hero{min-height:690px;display:grid;grid-template-columns:1.1fr .9fr;align-items:center;gap:62px;padding:58px 0 74px}.eyebrow{display:inline-flex;align-items:center;gap:9px;border:1px solid var(--line);background:rgba(255,255,255,.025);color:#b8c0cc;padding:8px 12px;border-radius:999px;font-size:13px}.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 16px rgba(80,223,138,.9)}
+    h1{font-size:clamp(58px,8vw,102px);line-height:.92;letter-spacing:-.065em;margin:24px 0 22px;max-width:760px}.accent{background:linear-gradient(180deg,#fff 8%,#a9b1be 120%);-webkit-background-clip:text;background-clip:text;color:transparent}.lead{font-size:20px;line-height:1.58;color:var(--muted);max-width:670px;margin:0 0 30px}.hero-actions{display:flex;gap:12px;flex-wrap:wrap}.hero-actions .cta{padding:14px 20px;border-radius:14px}.hero-actions .pill{padding:14px 18px;border-radius:14px}
+    .visual{position:relative;display:grid;place-items:center}.halo{position:absolute;width:430px;height:430px;border-radius:50%;background:radial-gradient(circle,rgba(255,64,64,.19),rgba(255,64,64,.05) 45%,transparent 70%);filter:blur(2px)}.logo-card{width:min(430px,90vw);aspect-ratio:1;border:1px solid rgba(255,255,255,.12);border-radius:34px;padding:24px;background:linear-gradient(145deg,rgba(255,255,255,.09),rgba(255,255,255,.025));box-shadow:var(--shadow);backdrop-filter:blur(20px);transform:rotate(1.5deg)}.logo-card img{width:100%;height:100%;display:block;object-fit:cover;border-radius:24px;background:#fff}
+    .mini-status{position:absolute;left:-6px;bottom:36px;padding:11px 14px;border:1px solid var(--line);border-radius:14px;background:rgba(12,15,20,.9);backdrop-filter:blur(14px);font-size:13px;color:#d7dce3;box-shadow:0 18px 45px rgba(0,0,0,.35)}.mini-status span{color:var(--green);font-weight:800}
+    section{padding:80px 0}.section-head{max-width:720px;margin-bottom:30px}.kicker{color:#b0b8c4;font-size:13px;font-weight:750;letter-spacing:.12em;text-transform:uppercase}.section-head h2{font-size:clamp(36px,5vw,58px);letter-spacing:-.045em;line-height:1.02;margin:12px 0 14px}.section-head p{color:var(--muted);font-size:17px;line-height:1.65;margin:0}
+    .signal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.signal{padding:22px;border-radius:22px;background:var(--panel);border:1px solid var(--line);box-shadow:0 16px 55px rgba(0,0,0,.2)}.signal i{display:block;width:12px;height:12px;border-radius:50%;margin-bottom:24px}.signal h3{font-size:20px;margin:0 0 8px;letter-spacing:-.02em}.signal p{margin:0;color:var(--muted);line-height:1.5;font-size:14px}.g{background:var(--green);box-shadow:0 0 18px rgba(80,223,138,.55)}.y{background:var(--yellow);box-shadow:0 0 18px rgba(255,212,90,.45)}.o{background:var(--orange);box-shadow:0 0 18px rgba(255,157,77,.45)}.r{background:var(--red);box-shadow:0 0 18px rgba(255,93,104,.48)}
+    .features{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.feature{min-height:210px;padding:25px;border-radius:22px;background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.018));border:1px solid var(--line)}.feature .num{font-size:12px;color:#7f8996;font-weight:800;letter-spacing:.09em}.feature h3{font-size:22px;letter-spacing:-.03em;margin:36px 0 9px}.feature p{margin:0;color:var(--muted);line-height:1.55;font-size:14px}
+    .demo{border:1px solid var(--line);border-radius:28px;background:#0d1016;box-shadow:var(--shadow);overflow:hidden}.demo-top{display:flex;justify-content:space-between;align-items:center;padding:17px 20px;border-bottom:1px solid var(--line);color:#8f99a6;font-size:12px}.demo-list{padding:10px}.stream{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;padding:17px 15px;border-radius:16px}.stream+.stream{border-top:1px solid rgba(255,255,255,.055)}.stream-title{font-weight:750;letter-spacing:-.015em}.stream-sub{margin-top:5px;color:#8993a0;font-size:12px}.stream-badge{font-size:12px;border-radius:999px;padding:7px 10px;border:1px solid var(--line);color:#b9c1cc}.stream.green .stream-title:first-letter{color:var(--green)}
+    .bottom-cta{padding-bottom:110px}.cta-panel{display:flex;align-items:center;justify-content:space-between;gap:30px;padding:36px;border:1px solid var(--line);border-radius:28px;background:linear-gradient(135deg,rgba(255,255,255,.065),rgba(255,255,255,.018));box-shadow:var(--shadow)}.cta-panel h2{font-size:34px;letter-spacing:-.04em;margin:0 0 8px}.cta-panel p{color:var(--muted);margin:0}.cta-panel .cta{border-radius:14px;padding:14px 20px;white-space:nowrap}
+    footer{border-top:1px solid var(--line);padding:24px 0 38px;color:#7f8996;font-size:12px}.footer-row{display:flex;justify-content:space-between;gap:20px;align-items:center}.health{display:inline-flex;align-items:center;gap:7px}.health b{width:7px;height:7px;border-radius:50%;background:#707985}.health.online b{background:var(--green);box-shadow:0 0 12px rgba(80,223,138,.65)}
+    @media(max-width:900px){.hero{grid-template-columns:1fr;padding-top:40px}.visual{order:-1}.logo-card{width:300px}.halo{width:330px;height:330px}.signal-grid{grid-template-columns:1fr 1fr}.features{grid-template-columns:1fr 1fr}.mini-status{left:calc(50% - 170px)}}
+    @media(max-width:620px){.shell{width:min(100% - 26px,1120px)}nav{height:68px}.pill.hide-sm{display:none}.hero{gap:38px;min-height:auto;padding:34px 0 58px}h1{font-size:56px}.lead{font-size:17px}.signal-grid,.features{grid-template-columns:1fr}.logo-card{width:255px;border-radius:28px;padding:17px}.logo-card img{border-radius:20px}.mini-status{font-size:12px;bottom:16px;left:4px}.cta-panel{align-items:flex-start;flex-direction:column;padding:28px}.footer-row{align-items:flex-start;flex-direction:column}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <nav>
+      <a class="brand" href="/"><img src="/logo.png" alt=""><span>StreamDoctor</span></a>
+      <div class="nav-actions"><a class="pill hide-sm" href="#how">How it works</a><a class="cta" href="/configure">Configure</a></div>
+    </nav>
+
+    <main>
+      <section class="hero">
+        <div>
+          <span class="eyebrow"><span class="dot"></span>Stremio &amp; Nuvio stream diagnostics</span>
+          <h1><span class="accent">Know before</span><br>you play.</h1>
+          <p class="lead">StreamDoctor sits between your stream addons and the player, checks every candidate, then puts the most useful results first — without replacing your existing providers.</p>
+          <div class="hero-actions"><a class="cta" href="/configure">Configure StreamDoctor →</a><a class="pill" href="#signals">See the signals</a></div>
+        </div>
+        <div class="visual">
+          <div class="halo"></div>
+          <div class="logo-card"><img src="/logo.png" alt="StreamDoctor logo"></div>
+          <div class="mini-status"><span>● Online</span> · v0.2.4</div>
+        </div>
+      </section>
+
+      <section id="signals">
+        <div class="section-head"><span class="kicker">One glance</span><h2>A traffic light for every stream.</h2><p>No percentages and no noisy diagnostics in the title. Status first, then quality, language and provider.</p></div>
+        <div class="signal-grid">
+          <article class="signal"><i class="g"></i><h3>Ready</h3><p>Direct and reachable. These are shown first.</p></article>
+          <article class="signal"><i class="y"></i><h3>Extra pipeline</h3><p>Sidecar, extractor, sync or another processing step may be involved.</p></article>
+          <article class="signal"><i class="o"></i><h3>Problem detected</h3><p>Timeout, HTTP error or another issue worth knowing before playback.</p></article>
+          <article class="signal"><i class="r"></i><h3>Dead</h3><p>Confirmed unavailable links such as 404 or 410 responses.</p></article>
+        </div>
+      </section>
+
+      <section id="how">
+        <div class="section-head"><span class="kicker">Built as middleware</span><h2>Your addons stay. StreamDoctor sorts the noise.</h2><p>Add your upstream manifests once. StreamDoctor merges them, probes what can be checked and keeps the original stream data intact.</p></div>
+        <div class="features">
+          <article class="feature"><span class="num">01 · STATUS</span><h3>Adaptive probing</h3><p>Fast check first, then a longer retry before a stream is considered slow. Host concurrency is limited to reduce false timeouts.</p></article>
+          <article class="feature"><span class="num">02 · MEDIA</span><h3>Quality &amp; language</h3><p>Reads HLS metadata when available and falls back to provider labels without confusing subtitle language with spoken audio.</p></article>
+          <article class="feature"><span class="num">03 · ORDER</span><h3>Useful ranking</h3><p>Green, yellow, orange, red — then 4K, 1440p, 1080p, 720p and SD. Providers remain fairly interleaved.</p></article>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-head"><span class="kicker">Minimal output</span><h2>Only what matters in the stream list.</h2></div>
+        <div class="demo">
+          <div class="demo-top"><span>Example · episode results</span><span>StreamDoctor</span></div>
+          <div class="demo-list">
+            <div class="stream"><div><div class="stream-title">🟢 · 4K · ITA/ENG · EasyStreams</div><div class="stream-sub">HLS · 14 Mbps · ~2.8 GB · 132ms</div></div><span class="stream-badge">Ready</span></div>
+            <div class="stream"><div><div class="stream-title">🟢 · 1080p · ITA · ToastFlix</div><div class="stream-sub">Direct HLS · 6.8 Mbps · 181ms</div></div><span class="stream-badge">Ready</span></div>
+            <div class="stream"><div><div class="stream-title">🟡 · 1080p · ITA · ToastFlix</div><div class="stream-sub">Sidecar · Slow probe</div></div><span class="stream-badge">Pipeline</span></div>
+            <div class="stream"><div><div class="stream-title">🟠 · 720p · ENG · Provider</div><div class="stream-sub">HTTP 403 · 214ms</div></div><span class="stream-badge">Error</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="bottom-cta">
+        <div class="cta-panel"><div><h2>Keep your providers. Add a doctor.</h2><p>Create a personal StreamDoctor manifest in a few seconds.</p></div><a class="cta" href="/configure">Open configurator →</a></div>
+      </section>
+    </main>
+
+    <footer><div class="footer-row"><span>StreamDoctor · middleware addon for Stremio / Nuvio</span><span id="health" class="health"><b></b><span>Checking service…</span></span></div></footer>
+  </div>
+<script>
+(async()=>{const el=document.getElementById('health');try{const r=await fetch('/health',{cache:'no-store'});const d=await r.json();if(r.ok&&d.ok){el.classList.add('online');el.querySelector('span').textContent='Service online · v'+d.version}else throw 0}catch{el.querySelector('span').textContent='Service status unavailable'}})();
+</script>
+</body>
+</html>

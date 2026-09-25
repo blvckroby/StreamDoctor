@@ -1,0 +1,17 @@
+services:
+  streamdoctor:
+    build: .
+    container_name: streamdoctor
+    restart: unless-stopped
+    ports:
+      - "7000:7000"
+    environment:
+      PORT: 7000
+      DATA_DIR: /app/data
+      ALLOW_PRIVATE_NETWORKS: "false"
+      PROBE_CONCURRENCY: 4
+    volumes:
+      - streamdoctor-data:/app/data
+
+volumes:
+  streamdoctor-data:
