@@ -12,7 +12,6 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.request.receive
-import io.ktor.server.request.header
 import io.ktor.server.response.respond
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -131,9 +130,7 @@ private fun streamEndpoint(manifestUrl: String, type: String, id: String): Strin
     return "${uri.scheme}://${uri.rawAuthority}$path$query"
 }
 
-private class GatewayService(
-    private val client: HttpClient
-) {
+private class GatewayService(private val client: HttpClient) {
     private val cache = ConcurrentHashMap<String, CachedResult>()
     private val cacheTtlMs = 20_000L
 
@@ -245,7 +242,7 @@ fun main() {
                     call.respond(HttpStatusCode.ServiceUnavailable, mapOf("error" to "Set ADMIN_TOKEN before enabling configuration"))
                     return@post
                 }
-                val supplied = call.request.header("X-Admin-Token") ?: ""
+                val supplied = call.request.headers["X-Admin-Token"] ?: ""
                 if (!MessageDigest.isEqual(adminToken.toByteArray(), supplied.toByteArray())) {
                     call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Invalid admin token"))
                     return@post
