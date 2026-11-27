@@ -1,0 +1,29 @@
+name: Ktor Gateway Build
+
+on:
+  push:
+    branches:
+      - feature/ktor-smart-gateway
+    paths:
+      - "ktor-gateway/**"
+      - ".github/workflows/ktor-gateway.yml"
+  pull_request:
+    paths:
+      - "ktor-gateway/**"
+      - ".github/workflows/ktor-gateway.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+      - name: Build Ktor service
+        working-directory: ktor-gateway
+        run: gradle --no-daemon clean build
