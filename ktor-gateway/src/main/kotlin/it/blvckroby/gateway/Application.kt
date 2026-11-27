@@ -3,15 +3,16 @@ package it.blvckroby.gateway
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.request.receive
+import io.ktor.server.request.header
 import io.ktor.server.response.respond
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -24,7 +25,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -34,6 +34,7 @@ import java.net.InetAddress
 import java.net.URI
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -93,12 +94,10 @@ private fun isPrivateAddress(address: InetAddress): Boolean {
 
     val bytes = address.address
     if (bytes.size == 16) {
-        // IPv6 unique-local (fc00::/7) and IPv4-mapped addresses.
         if ((bytes[0].toInt() and 0xFE) == 0xFC) return true
         if (bytes.sliceArray(0..9).all { it == 0.toByte() } &&
             bytes[10] == 0xFF.toByte() && bytes[11] == 0xFF.toByte()) {
-            val mapped = InetAddress.getByAddress(bytes.sliceArray(12..15))
-            return isPrivateAddress(mapped)
+            return isPrivateAddress(InetAddress.getByAddress(bytes.sliceArray(12..15)))
         }
     }
     return false
@@ -107,7 +106,9 @@ private fun isPrivateAddress(address: InetAddress): Boolean {
 private fun validatePublicHttps(raw: String): URI {
     val uri = runCatching { URI(raw) }.getOrElse { error("Invalid manifest URL") }
     require(uri.scheme.equals("https", true)) { "Only HTTPS addon manifests are accepted" }
-    require(uri.host != null && uri.userInfo == null) { "Manifest URL must have a hostname and no embedded credentials" }
+    require(uri.host != null && uri.userInfo == null) {
+        "Manifest URL must have a hostname and no embedded credentials"
+    }
     val host = uri.host.lowercase()
     require(host != "localhost" && !host.endsWith(".localhost") && !host.endsWith(".local")) {
         "Local hostnames are blocked"
@@ -126,12 +127,12 @@ private fun streamEndpoint(manifestUrl: String, type: String, id: String): Strin
     val uri = URI(manifestUrl)
     val basePath = uri.rawPath.removeSuffix("/manifest.json").removeSuffix("/")
     val path = "$basePath/stream/${encoded(type)}/${encoded(id)}.json"
-    return URI(uri.scheme, null, uri.host, uri.port, path, uri.rawQuery, null).toASCIIString()
+    val query = uri.rawQuery?.let { "?$it" } ?: ""
+    return "${uri.scheme}://${uri.rawAuthority}$path$query"
 }
 
 private class GatewayService(
-    private val client: HttpClient,
-    private val store: ConfigStore
+    private val client: HttpClient
 ) {
     private val cache = ConcurrentHashMap<String, CachedResult>()
     private val cacheTtlMs = 20_000L
@@ -141,7 +142,9 @@ private class GatewayService(
         val response = client.get(uri.toString()) {
             headers.append("User-Agent", "NuvioSmartGateway/0.1")
         }
-        require(response.status.value in 200..299) { "Manifest returned HTTP ${response.status.value}" }
+        require(response.status.value in 200..299) {
+            "Manifest returned HTTP ${response.status.value}; redirects are not followed in this MVP"
+        }
         val manifest = json.parseToJsonElement(response.bodyAsText()).jsonObject
         val resources = manifest["resources"]?.jsonArray ?: error("Manifest has no resources")
         val hasStream = resources.any { resource ->
@@ -173,6 +176,10 @@ private class GatewayService(
                     val payload = json.parseToJsonElement(response.bodyAsText()).jsonObject
                     val streams = payload["streams"]?.jsonArray?.toList() ?: emptyList()
                     cache[key] = CachedResult(now + cacheTtlMs, streams)
+                    if (cache.size > 1_000) {
+                        val oldest = cache.entries.minByOrNull { it.value.expiresAt }
+                        if (oldest != null) cache.remove(oldest.key, oldest.value)
+                    }
                     streams
                 }.getOrDefault(emptyList())
             }
@@ -194,15 +201,17 @@ fun main() {
     val port = System.getenv("PORT")?.toIntOrNull() ?: 7860
     val dataDir = File(System.getenv("DATA_DIR") ?: "/app/data")
     val store = ConfigStore(File(dataDir, "configs.json"))
+    val adminToken = System.getenv("ADMIN_TOKEN")?.takeIf { it.isNotBlank() }
     val client = HttpClient(CIO) {
         expectSuccess = false
+        followRedirects = false
         install(HttpTimeout) {
             connectTimeoutMillis = 5_000
             socketTimeoutMillis = 12_000
             requestTimeoutMillis = 12_000
         }
     }
-    val service = GatewayService(client, store)
+    val service = GatewayService(client)
 
     embeddedServer(Netty, host = "0.0.0.0", port = port) {
         install(ContentNegotiation) { json(json) }
@@ -232,6 +241,15 @@ fun main() {
             }
 
             post("/api/config") {
+                if (adminToken == null) {
+                    call.respond(HttpStatusCode.ServiceUnavailable, mapOf("error" to "Set ADMIN_TOKEN before enabling configuration"))
+                    return@post
+                }
+                val supplied = call.request.header("X-Admin-Token") ?: ""
+                if (!MessageDigest.isEqual(adminToken.toByteArray(), supplied.toByteArray())) {
+                    call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Invalid admin token"))
+                    return@post
+                }
                 val body = runCatching { call.receive<CreateConfigRequest>() }.getOrElse {
                     call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid JSON configuration"))
                     return@post
@@ -251,15 +269,16 @@ fun main() {
                     return@post
                 }
                 val config = GatewayConfig(
-                    id = UUID.randomUUID().toString().replace("-", "").take(12),
+                    id = UUID.randomUUID().toString().replace("-", "").take(16),
                     upstreams = upstreams,
                     maxStreams = body.maxStreams.coerceIn(5, 100),
                     upstreamTimeoutMs = body.upstreamTimeoutMs.coerceIn(2_000, 20_000)
                 )
                 store.put(config)
+                val publicUrl = System.getenv("PUBLIC_URL")?.trimEnd('/') ?: "http://localhost:$port"
                 call.respond(mapOf(
                     "id" to config.id,
-                    "manifestUrl" to "${System.getenv("PUBLIC_URL")?.trimEnd('/') ?: "http://localhost:$port"}/${config.id}/manifest.json",
+                    "manifestUrl" to "$publicUrl/${config.id}/manifest.json",
                     "validAddons" to upstreams.map { it.name },
                     "rejectedCount" to (body.upstreams.distinct().size - upstreams.size)
                 ))
