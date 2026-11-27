@@ -24,6 +24,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -145,8 +147,8 @@ private class GatewayService(private val client: HttpClient) {
         val manifest = json.parseToJsonElement(response.bodyAsText()).jsonObject
         val resources = manifest["resources"]?.jsonArray ?: error("Manifest has no resources")
         val hasStream = resources.any { resource ->
-            resource.toString() == "\"stream\"" ||
-                resource.jsonObject["name"]?.toString() == "\"stream\""
+            (resource as? JsonPrimitive)?.content == "stream" ||
+                (resource as? JsonObject)?.get("name")?.let { (it as? JsonPrimitive)?.content == "stream" } == true
         }
         require(hasStream) { "Addon does not expose the Stremio stream resource" }
         val name = manifest["name"]?.toString()?.trim('"') ?: "Unnamed addon"
